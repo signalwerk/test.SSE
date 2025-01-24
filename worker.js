@@ -1,3 +1,7 @@
+// cloudflare worker
+// This is a simple SSE server that sends 15 updates, one per second, and then sends an END message.
+// It also handles OPTIONS requests for CORS preflight.
+
 export default {
   fetch: async (request, env, ctx) => {
     const handler = sse(sseHandler, {
@@ -24,24 +28,39 @@ export default {
 };
 
 async function* generateEvents() {
-  // Send 15 updates, one per second
-  for (let i = 1; i <= 15; i++) {
-    const date = new Date();
-    const zurichTime = date.toLocaleString("de-CH", {
-      timeZone: "Europe/Zurich",
-      dateStyle: "medium",
-      timeStyle: "medium",
-    });
+  try {
+    // Send 15 updates, one per second
+    for (let i = 1; i <= 15; i++) {
+      const date = new Date();
+      const zurichTime = date.toLocaleString("de-CH", {
+        timeZone: "Europe/Zurich",
+        dateStyle: "medium",
+        timeStyle: "medium",
+      });
 
+      yield {
+        data: `Update ${i} – ${zurichTime}`,
+      };
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+
+    // First send a regular message indicating we're done
     yield {
-      data: `Update ${i} – ${zurichTime}`,
+      data: "Sending final message...",
     };
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
 
-  yield {
-    data: "END",
-  };
+    // Then send the END message with event type 'close'
+    yield {
+      event: "close",
+      data: "END",
+    };
+  } catch (error) {
+    console.error("Error in generateEvents:", error);
+    yield {
+      event: "error",
+      data: "An error occurred",
+    };
+  }
 }
 
 const sseHandler = async function* (request, env, ctx) {

@@ -90,15 +90,18 @@
         );
 
         evtSource.onmessage = function (event) {
-          if (event.data === "END") {
-            messagesDiv.innerHTML += "Connection closed<br>";
-            evtSource.close();
-          } else {
-            messagesDiv.innerHTML += event.data + "<br>";
-          }
+          console.log("Message received:", event);
+          messagesDiv.innerHTML += `Message: ${event.data}<br>`;
         };
 
+        evtSource.addEventListener("close", function (event) {
+          console.log("Close event received:", event);
+          messagesDiv.innerHTML += `Close event received: ${event.data}<br>`;
+          evtSource.close();
+        });
+
         evtSource.onerror = function (err) {
+          console.log("Error occurred:", err);
           messagesDiv.innerHTML += "Error: Connection lost<br>";
           evtSource.close();
         };
