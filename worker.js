@@ -1,48 +1,83 @@
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request))
-})
+export default {
+  fetch: async (request, env, ctx) => {
+    const handler = sse(sseHandler, {
+      customHeaders: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': '*'
+      }
+    });
+    
+    // Handle OPTIONS request for CORS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': '*'
+        }
+      });
+    }
+    
+    return handler(request, env, ctx);
+  }
+};
 
-async function handleRequest(request) {
-  // Check if it's a request for SSE
-  if (request.url.includes('/events')) {
-    return handleSSE(request)
+async function* generateEvents() {
+  // Send 15 updates, one per second
+  for (let i = 1; i <= 15; i++) {
+    yield {
+      data: `Update ${i} at ${new Date().toISOString()}`
+    };
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
   
-  // Return 404 for other routes
-  return new Response('Not found', { status: 404 })
+  yield {
+    data: 'END'
+  };
 }
 
-async function handleSSE(request) {
-  let stream = new TransformStream()
-  const writer = stream.writable.getWriter()
-  const encoder = new TextEncoder()
+const sseHandler = async function* (request, env, ctx) {
+  yield* generateEvents();
+};
 
-  // Start sending events in the background
-  sendEvents(writer, encoder)
+function sse(sseHandler, options = {}) {
+  const stream = new TransformStream();
 
-  return new Response(stream.readable, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  })
-}
-
-async function sendEvents(writer, encoder) {
-  try {
-    // Send 15 updates, one per second
-    for (let i = 1; i <= 15; i++) {
-      const data = `Update ${i} at ${new Date().toISOString()}`
-      const message = `data: ${data}\n\n`
-      await writer.write(encoder.encode(message))
-      await new Promise(resolve => setTimeout(resolve, 1000))
+  async function run(request, env, ctx) {
+    const writer = stream.writable.getWriter();
+    try {
+      for await (const event of sseHandler(request, env, ctx)) {
+        await writer.write(encodeEvent(event));
+      }
+    } finally {
+      await writer.close();
     }
-
-    // Send final message
-    await writer.write(encoder.encode('data: END\n\n'))
-    await writer.close()
-  } catch (err) {
-    writer.close()
   }
+
+  return async function fetchHandler(request, env, ctx) {
+    ctx.waitUntil(run(request, env, ctx));
+    return new Response(stream.readable, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        ...(options?.customHeaders ?? {}),
+      },
+    });
+  };
+}
+
+const textEncoder = new TextEncoder();
+
+function encodeEvent(event) {
+  let payload = '';
+  if (event.id) {
+    payload = `id: ${event.id}\n`;
+  }
+  if (event.event) {
+    payload += `event: ${event.event}\n`;
+  }
+  payload += `data: ${JSON.stringify(event.data ?? null)}\n\n`;
+  return textEncoder.encode(payload);
 }

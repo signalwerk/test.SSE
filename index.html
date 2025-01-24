@@ -23,7 +23,7 @@
             const messagesDiv = document.getElementById('messages');
             messagesDiv.innerHTML = 'Connecting...<br>';
 
-            const evtSource = new EventSource('/events');
+            const evtSource = new EventSource('https://sse-test.signalwerk.workers.dev/');
 
             evtSource.onmessage = function(event) {
                 if (event.data === 'END') {
