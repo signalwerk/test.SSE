@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSE Demo</title>
+    <style>
+        #messages {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            min-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Server-Sent Events Demo</h1>
+    <button onclick="startSSE()">Start Receiving Updates</button>
+    <div id="messages"></div>
+
+    <script>
+        function startSSE() {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = 'Connecting...<br>';
+
+            const evtSource = new EventSource('/events');
+
+            evtSource.onmessage = function(event) {
+                if (event.data === 'END') {
+                    messagesDiv.innerHTML += 'Connection closed<br>';
+                    evtSource.close();
+                } else {
+                    messagesDiv.innerHTML += event.data + '<br>';
+                }
+            };
+
+            evtSource.onerror = function(err) {
+                messagesDiv.innerHTML += 'Error: Connection lost<br>';
+                evtSource.close();
+            };
+        }
+    </script>
+</body>
+</html>
