@@ -2,38 +2,45 @@ export default {
   fetch: async (request, env, ctx) => {
     const handler = sse(sseHandler, {
       customHeaders: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': '*'
-      }
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      },
     });
-    
+
     // Handle OPTIONS request for CORS preflight
-    if (request.method === 'OPTIONS') {
+    if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Allow-Headers': '*'
-        }
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+        },
       });
     }
-    
+
     return handler(request, env, ctx);
-  }
+  },
 };
 
 async function* generateEvents() {
   // Send 15 updates, one per second
   for (let i = 1; i <= 15; i++) {
+    const date = new Date();
+    const zurichTime = date.toLocaleString("de-CH", {
+      timeZone: "Europe/Zurich",
+      dateStyle: "medium",
+      timeStyle: "medium",
+    });
+
     yield {
-      data: `Update ${i} at ${new Date().toISOString()}`
+      data: `Update ${i} – ${zurichTime}`,
     };
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
-  
+
   yield {
-    data: 'END'
+    data: "END",
   };
 }
 
@@ -59,9 +66,9 @@ function sse(sseHandler, options = {}) {
     ctx.waitUntil(run(request, env, ctx));
     return new Response(stream.readable, {
       headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
         ...(options?.customHeaders ?? {}),
       },
     });
@@ -71,7 +78,7 @@ function sse(sseHandler, options = {}) {
 const textEncoder = new TextEncoder();
 
 function encodeEvent(event) {
-  let payload = '';
+  let payload = "";
   if (event.id) {
     payload = `id: ${event.id}\n`;
   }

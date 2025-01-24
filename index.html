@@ -1,44 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SSE Demo</title>
     <style>
-        #messages {
-            margin: 20px;
-            padding: 20px;
-            border: 1px solid #ccc;
-            min-height: 200px;
-        }
+      @import url("https://fonts.signalwerk.ch/css/latest/family=Work+Sans:ital,wght@0,100..900;1,100..900.css");
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        font: inherit; /* Get rid of all font sizes and heights */
+      }
+
+      :root {
+        font-family: "Work Sans", sans-serif;
+        font-weight: 400;
+        font-size: 18px;
+        line-height: 1.5;
+
+        --color-green: #006984;
+        --color-blue: #0054a2;
+        --color-black: #121212;
+        --color-white: #ffffff;
+        --color-gray: #767778;
+        --color-primary: var(--color-blue);
+      }
+
+      h1 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-top: 1rem;
+        margin-bottom: 0.8rem;
+        text-wrap: balance;
+      }
+      body {
+        padding: 4vw;
+      }
+
+      button {
+        box-shadow: none;
+        background: transparent;
+        text-shadow: none;
+        cursor: pointer;
+        line-height: inherit;
+        border: 0.15em solid var(--color-black);
+        border-radius: 0;
+        color: inherit;
+        padding: 0.5em 1em;
+      }
+
+      button:focus {
+        outline: 0 !important;
+        border-color: var(--color-primary);
+      }
+
+      button:hover:not(:disabled) {
+        color: var(--color-white);
+        background-color: var(--color-primary);
+        border-color: var(--color-primary);
+      }
+
+      #messages {
+        margin-top: 1rem;
+        padding: 2rem;
+        min-height: 5rem;
+        border: 1px solid var(--color-gray);
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Server-Sent Events Demo</h1>
     <button onclick="startSSE()">Start Receiving Updates</button>
     <div id="messages"></div>
 
     <script>
-        function startSSE() {
-            const messagesDiv = document.getElementById('messages');
-            messagesDiv.innerHTML = 'Connecting...<br>';
+      function startSSE() {
+        const messagesDiv = document.getElementById("messages");
+        messagesDiv.innerHTML = "Connecting...<br>";
 
-            const evtSource = new EventSource('https://sse-test.signalwerk.workers.dev/');
+        const evtSource = new EventSource(
+          "https://sse-test.signalwerk.workers.dev/",
+        );
 
-            evtSource.onmessage = function(event) {
-                if (event.data === 'END') {
-                    messagesDiv.innerHTML += 'Connection closed<br>';
-                    evtSource.close();
-                } else {
-                    messagesDiv.innerHTML += event.data + '<br>';
-                }
-            };
+        evtSource.onmessage = function (event) {
+          if (event.data === "END") {
+            messagesDiv.innerHTML += "Connection closed<br>";
+            evtSource.close();
+          } else {
+            messagesDiv.innerHTML += event.data + "<br>";
+          }
+        };
 
-            evtSource.onerror = function(err) {
-                messagesDiv.innerHTML += 'Error: Connection lost<br>';
-                evtSource.close();
-            };
-        }
+        evtSource.onerror = function (err) {
+          messagesDiv.innerHTML += "Error: Connection lost<br>";
+          evtSource.close();
+        };
+      }
     </script>
-</body>
+  </body>
 </html>
